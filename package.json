@@ -1,0 +1,11 @@
+{
+  "name": "language-anubis",
+  "version": "1.0.0",
+  "description": "Syntax highlighting for the Anubis language",
+  "engines": {
+    "atom": "*",
+    "node": "*"
+  },
+  "repository": "https://github.com/grz0zrg/language-anubis",
+  "main": "./lib/init"
+}

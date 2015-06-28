@@ -1,0 +1,6 @@
+	This was used to get all public library functions
+		pcregrep -Mrh -o1 --exclude='^((?!.anubis).)*$' -- '^public\s+define(?:\s+macro|\s+inline)?\s+(?:\w|\((?:\w|,|\s)*\))+\s+(\w+)(?:\s+\()?' . | sort | uniq | paste -sd\|
+	And for types
+		pcregrep -Mrh -o1 --exclude='^((?!.anubis).)*$' -- '^public\s+type\s+(\w+)' . | sort | uniq | paste -sd\|
+	And for type alternatives (it basically strip /* */ // comments then get each "public type" block, strip code between parenthesis (including them) then just get the first word, sort, remove duplicate and delimit with |, obviously it will fail on some like alternatives on a single line or complex alternative but is ok to get the most)
+		find -name "*.anubis" -exec cat {} \; | perl -p0 -e 's#/\*.*?\*/##sg' | perl -p0 -e 's/\/\/.*$//gm' | pcregrep -Mrh -o1 -- '^public\s+type\s+\w+.*:((?:\n|.)+?)(?:\. |\.$|\.\.\.)' | perl -0777 -pe 's{(\(((?:(?>[^)(]+)|(?1))*)\))}{$&=~s/.*\((.*)\)//rsg}gse' | pcregrep -Mh -o1 -- '^\s*(\w+)$' | sort | uniq | paste -sd\| > f
