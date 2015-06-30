@@ -74,7 +74,7 @@
             }
             {
                 'name': 'keyword.control.anubis'
-                'match': '\\b(?:if|is|then|else)'
+                'match': '\\b(?:if|is|then|else)\\b'
             }
             {
                 'name': 'keyword.other.anubis'
@@ -82,7 +82,7 @@
             }
             {
                 'name': 'constant.language.anubis'
-                'match': '\\b(?:true|false)'
+                'match': '\\b(?:true|false)\\b'
             }
             {
                 'name': 'constant.numeric.anubis'
