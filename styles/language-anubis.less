@@ -1,0 +1,178 @@
+@import "ui-variables";
+@import 'octicon-utf-codes';
+
+language-anubis-message {
+  display: flex;
+  align-items: flex-end;
+  padding: 2px;
+  font-size: @font-size;
+  span {
+    padding: 0 6px;
+  }
+  & > .badge {
+    align-self: flex-start;
+  }
+}
+
+language-anubis-multiline-message {
+  display: block;
+  pointer-events: auto;
+  language-anubis-message-line {
+    display: block;
+    white-space: pre;
+  }
+  language-anubis-message-line:not(:first-child) {
+    display: none;
+    margin-left: 1.1em;
+  }
+  language-anubis-message-line:first-child:not(:nth-last-of-type(1))::before {
+    font-family: 'Octicons Regular';
+    content: @triangle-right;
+    display: inline-block;
+    width: 1em;
+    margin-right: 0.1em;
+    text-align: center;
+    height: 1em;
+  }
+  &:focus, &.expanded {
+    language-anubis-message-line:first-child:not(:nth-last-of-type(1))::before {
+      content: @triangle-down;
+    }
+    language-anubis-message-line:not(:first-child) {
+      display: block;
+    }
+  }
+}
+
+#language-anubis-panel {
+  display: block;
+  overflow-y: scroll;
+  max-height: 150px;
+  padding: 4px 8px;
+  &[hidden]{
+    display: none;
+  }
+}
+
+#language-anubis-inline {
+  @language-anubis-inline-link: fade(@base-background-color, 66%);
+  @language-anubis-inline-fg: @base-background-color;
+  @language-anubis-inline-bg: @text-color;
+  margin-top: 4px;
+  padding: 4px;
+  color: @language-anubis-inline-fg;
+  border-radius: @component-border-radius * 1.5;
+  border-top-left-radius: 0;
+  background: @language-anubis-inline-bg;
+  box-shadow: 0 1px 3px hsla(0, 0, 0%, 0.4);
+
+  transition: opacity 300ms;
+  &.transparent {
+    opacity: 0.2;
+  }
+
+  // pointer arrow
+  &::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 0;
+    border: 4px solid;
+    border-color: transparent transparent @language-anubis-inline-bg @language-anubis-inline-bg;
+  }
+  a {
+    color: @language-anubis-inline-link;
+    margin-right: 4px;
+  }
+}
+
+anubis-language-build-bottom-tab {
+  display: inline-block;
+  margin-right: -1px; // hide left border
+  padding: 0 .6em;
+  line-height: 1.8em;
+  vertical-align: middle;
+  color: @text-color-subtle;
+  border: 1px solid @button-border-color;
+  background: fade(@button-background-color, 33%);
+  cursor: pointer;
+  &.first-tab {
+    border-top-left-radius: @component-border-radius;
+    border-bottom-left-radius: @component-border-radius;
+  }
+  &.last-tab {
+    margin-right: .6em;
+    border-top-right-radius: @component-border-radius;
+    border-bottom-right-radius: @component-border-radius;
+  }
+
+  &:active {
+    background: transparent;
+  }
+  &.active {
+    color: @text-color-highlight;
+    background: @button-background-color;
+  }
+
+  .count {
+    margin-left: .2em;
+  }
+}
+
+atom-text-editor::shadow .language-anubis-highlight .icon-right{
+  visibility: visible;
+  &::before{
+    content: @primitive-dot;
+    font-size: 1.1em;
+  }
+}
+// Styling Error Types
+atom-text-editor::shadow .language-anubis-highlight, .language-anubis-highlight{
+  &.badge {
+    border-radius: @component-border-radius;
+  }
+  &.error {
+    &:not(.line-number){
+      background-color: @background-color-error;
+      color: white;
+    }
+    .icon-right::before{
+      color: @background-color-error;
+    }
+    .region {
+      border-bottom: 1px dashed @background-color-error;
+    }
+  }
+  &.warning {
+    &:not(.line-number){
+      background-color: @background-color-warning;
+      color: white;
+    }
+    .icon-right::before{
+      color: @background-color-warning;
+    }
+    .region {
+      border-bottom: 1px dashed @background-color-warning;
+    }
+  }
+  &.trace {
+    &:not(.line-number){
+      background-color: @background-color-info;
+      color: white;
+    }
+    .icon-right::before{
+      color: @background-color-info;
+    }
+    .region {
+      border-bottom: 1px dashed @background-color-info;
+    }
+  }
+
+  // Used by bottom status icon
+  &.status-error {
+    color: @background-color-error;
+  }
+  &.status-success{
+    color: @background-color-success;
+  }
+}

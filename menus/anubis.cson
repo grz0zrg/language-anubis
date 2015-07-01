@@ -1,0 +1,14 @@
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Anubis'
+      'submenu': [
+        {
+          'label': 'Compile'
+          'command': 'anubis:compile'
+        }
+      ]
+    ]
+  }
+]

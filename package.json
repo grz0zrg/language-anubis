@@ -7,5 +7,12 @@
     "node": "*"
   },
   "repository": "https://github.com/grz0zrg/language-anubis",
-  "main": "./lib/init"
+  "main": "./lib/init",
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  }
 }

@@ -5,6 +5,6 @@ This is a package for the [Atom editor](https://atom.io) which add support for t
 
 ##Feature:
 - Syntax highlighting
-- Project build (WIP)
+- Project build and reports (WIP, UI code taken from the `linter` package)
 
 See also the [linter-anubis](https://github.com/grz0zrg/linter-anubis) plugin for on-the-fly syntax analysis.
