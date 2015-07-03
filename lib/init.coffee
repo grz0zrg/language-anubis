@@ -46,6 +46,7 @@ module.exports =
             rawTitle: true
 
         @messages.attach()
+        @messages.toggle()
         @messages.hide()
 
         pname = atom.config.get('language-anubis.projectName')
