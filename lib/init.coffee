@@ -50,10 +50,10 @@ module.exports =
 
         pname = atom.config.get('language-anubis.projectName')
         if atom.workspace.getActiveTextEditor()
-		    if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
-		        @messages.show()
-		    else
-		        @messages.hide()
+            if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
+                @messages.show()
+            else
+                @messages.hide()
 
         atom.workspace.onDidChangeActivePaneItem (editor) =>
             pname = atom.config.get('language-anubis.projectName')
@@ -109,6 +109,7 @@ module.exports =
                         @messages.setTitle("Could not compile the file '" + args[0] + "' because the Anubis compiler was not found.")
 
     deactivate: ->
+        @messages.close()
         @disposable.dispose()
 
     parseCompilerOutput: ->
