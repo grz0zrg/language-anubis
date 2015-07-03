@@ -84,9 +84,9 @@ module.exports =
             args = [atom.config.get('language-anubis.compilationSource'), "-nocolor"]
             args = args.concat (atom.config.get 'language-anubis.compilerArguments').split(" ")
 
-            parent = @
-
             @messages.setTitle('<span style="font-weight: bold; color: white;">Compiling ' + args[0] + ' ...</span>', true)
+
+            parent = @
 
             stdout = (output) =>
                 @messages.add new PlainMessageView
@@ -122,10 +122,13 @@ module.exports =
 
         while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
             msg_type = messages_arr[5]
+            color = ""
             if msg_type == "W"
                 warnings += 1
+                color = "yellow"
             else if msg_type == "E"
                 errors += 1
+                color = "red"
 
             message = messages_arr[7]
 
@@ -136,15 +139,16 @@ module.exports =
                 line: messages_arr[2]
                 character: messages_arr[3]
                 preview: message
+                color: color
 
-        title = "<span style='font-weight: bold;'>Build</span>"
+        title = "<span style='font-weight: bold;'>Build failed.</span>"
 
         if warnings > 0 || errors > 0
-            title += ": &nbsp;&nbsp;"
+            title += "&nbsp;"
             @messages.toggle()
 
         if errors > 0
-            title += "<span style='color: red; font-weight: bold;'>" + errors + "</span> <span font-weight: bold;'>error</span> "
+            title += "<span style='color: red;'>" + errors + " <span font-weight: bold;'>Error</span> </span>"
         else
             buildTimeRegex = /^Build time: (.* seconds)$/gm
             buildTimes = @compilerMessages.match buildTimeRegex
@@ -152,13 +156,15 @@ module.exports =
                 title = "<span style='color: green; font-weight: bold;'>" + buildTimes[buildTimes.length - 1] + "."
             else
                 title = "<span style='color: green; font-weight: bold;'>Build successful."
-            title += "<span>"
+            title += "</span>"
             @compilerMessages = @compilerMessages.replace(/(?:\r\n|\r|\n)/g, '<br />')
             @messages.add new PlainMessageView
                 message: @compilerMessages
                 raw: true
 
         if warnings > 0
-            title += "<span style='color: yellow; font-weight: bold;'>" + warnings + "</span> warning "
+            title += "<span style='color: yellow;'>" + warnings + " <span font-weight: bold;'>Warning</span> </span>"
 
         @messages.setTitle(title, true)
+
+        @compilerMessages = []
