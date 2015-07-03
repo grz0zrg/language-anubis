@@ -59,10 +59,11 @@ module.exports =
             pname = atom.config.get('language-anubis.projectName')
 
             if editor
-                if pname != "" && editor.getPath().indexOf(pname) != -1
-                    @messages.show()
-                else
-                    @messages.hide()
+                if editor..getPath()
+                    if pname != "" && editor.getPath().indexOf(pname) != -1
+                        @messages.show()
+                    else
+                        @messages.hide()
 
         atom.workspace.observeTextEditors (editor) ->
             editor.onDidSave ->
@@ -70,8 +71,9 @@ module.exports =
                     pname = atom.config.get('language-anubis.projectName')
 
                     if editor
-                        if pname != "" && editor.getPath().indexOf(pname) != -1
-                            atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
+                        if editor..getPath()
+                            if pname != "" && editor.getPath().indexOf(pname) != -1
+                                atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
 
         @disposable = atom.commands.add 'atom-text-editor', 'anubis:compile': (event) =>
             @messages.clear()
