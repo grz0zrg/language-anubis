@@ -49,10 +49,11 @@ module.exports =
         @messages.toggle()
 
         pname = atom.config.get('language-anubis.projectName')
-        if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
-            @messages.show()
-        else
-            @messages.hide()
+        if atom.workspace.getActiveTextEditor()
+		    if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
+		        @messages.show()
+		    else
+		        @messages.hide()
 
         atom.workspace.onDidChangeActivePaneItem (editor) =>
             pname = atom.config.get('language-anubis.projectName')
