@@ -1,6 +1,6 @@
 {
   "name": "language-anubis",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Syntax highlighting and build/build report for the Anubis language",
   "engines": {
     "atom": "*",
