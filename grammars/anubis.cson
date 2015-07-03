@@ -16,7 +16,7 @@
         'beginCaptures':
             '1':
                 'name': 'keyword.other.anubis'
-        'end': '(\\. )(?!.*\])|\\.$|\\.\\.\\.'
+        'end': '[^.](\\. )(?!.*\])|[^.]\\.$|\\.\\.\\.'
         'patterns': [
             {
                 'include': '#inParagraph'
