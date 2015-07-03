@@ -55,6 +55,8 @@ module.exports =
                 @messages.show()
             else
                 @messages.hide()
+        else
+            @messages.hide()
 
         atom.workspace.onDidChangeActivePaneItem (editor) =>
             pname = atom.config.get('language-anubis.projectName')
@@ -65,7 +67,10 @@ module.exports =
                         @messages.show()
                     else
                         @messages.hide()
-
+                else
+                    @messages.hide()
+            else
+                @messages.hide()
         atom.workspace.observeTextEditors (editor) ->
             editor.onDidSave ->
                 if atom.config.get('language-anubis.compileOnSave')
