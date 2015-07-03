@@ -29,6 +29,10 @@ module.exports =
             type: 'boolean'
             default: 'false'
             description: 'Enable/Disable compilation on save'
+        buildPanelMaxHeight:
+            type: 'number'
+            default: '300'
+            description: 'Max height of the build panel (px)'
 
     subscriptions: null
     compilerProcess: null
@@ -38,20 +42,25 @@ module.exports =
         @messages = new MessagePanelView
             title: 'Anubis build panel. (F9 to compile an Anubis source file)'
             position: 'bottom'
-            maxHeight: '300px'
+            maxHeight: atom.config.get('language-anubis.buildPanelMaxHeight') + "px"
             rawTitle: true
 
         @messages.attach()
         @messages.toggle()
 
-        atom.workspace.onDidChangeActivePaneItem (editor) =>
-            if atom.config.get('language-anubis.compileOnSave')
-                pname = atom.config.get('language-anubis.projectName')
+        pname = atom.config.get('language-anubis.projectName')
+        if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
+            @messages.show()
+        else
+            @messages.hide()
 
-                if pname != "" && editor.getPath().indexOf(pname) != -1
-                    #@messages.open()
-                else
-                    #@messages.close()
+        atom.workspace.onDidChangeActivePaneItem (editor) =>
+            pname = atom.config.get('language-anubis.projectName')
+
+            if pname != "" && editor.getPath().indexOf(pname) != -1
+                @messages.show()
+            else
+                @messages.hide()
 
         atom.workspace.observeTextEditors (editor) ->
             editor.onDidSave ->
@@ -133,6 +142,9 @@ module.exports =
         if warnings > 0 || errors > 0
             title += ": &nbsp;&nbsp;"
             @messages.toggle()
+
+        if errors > 0
+            title += "<span style='color: red; font-weight: bold;'>" + errors + "</span> <span font-weight: bold;'>error</span> "
         else
             buildTimeRegex = /^Build time: (.* seconds)$/gm
             buildTimes = @compilerMessages.match buildTimeRegex
@@ -145,9 +157,6 @@ module.exports =
             @messages.add new PlainMessageView
                 message: @compilerMessages
                 raw: true
-
-        if errors > 0
-            title += "<span style='color: red; font-weight: bold;'>" + errors + "</span> <span font-weight: bold;'>error</span> "
 
         if warnings > 0
             title += "<span style='color: yellow; font-weight: bold;'>" + warnings + "</span> warning "
