@@ -59,7 +59,7 @@ module.exports =
             pname = atom.config.get('language-anubis.projectName')
 
             if editor
-                if editor.getPath()
+                if editor.getPath
                     if pname != "" && editor.getPath().indexOf(pname) != -1
                         @messages.show()
                     else
@@ -71,7 +71,7 @@ module.exports =
                     pname = atom.config.get('language-anubis.projectName')
 
                     if editor
-                        if editor.getPath()
+                        if editor.getPath
                             if pname != "" && editor.getPath().indexOf(pname) != -1
                                 atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
 
