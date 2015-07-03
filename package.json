@@ -8,11 +8,7 @@
   },
   "repository": "https://github.com/grz0zrg/language-anubis",
   "main": "./lib/init",
-  "consumedServices": {
-    "status-bar": {
-      "versions": {
-        "^1.0.0": "consumeStatusBar"
-      }
-    }
+  "dependencies": {
+    "atom-message-panel": "^1.2.4"
   }
 }

@@ -1,2 +1,2 @@
-'atom-workspace':
+'atom-text-editor':
 	'F9': 'anubis:compile'

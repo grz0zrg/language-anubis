@@ -1,7 +1,7 @@
-BottomTab = require './bottom-tab'
-BottomStatus = require './bottom-status'
-
 {CompositeDisposable, BufferedProcess, NotificationManager} = require 'atom'
+{MessagePanelView, LineMessageView, PlainMessageView} = require 'atom-message-panel'
+{exec} = require 'child_process'
+path = require 'path'
 
 module.exports =
     config:
@@ -13,174 +13,143 @@ module.exports =
             type: 'string'
             default: 'anubis'
             description: 'Anubis compiler executable name'
-        compilationSource:
+        projectName:
             type: 'string'
             default: ''
-            description: 'A file which contain a "global"'
+            description: 'The project path you want to enable compilation for'
         compilerArguments:
             type: 'string'
             default: ''
             description: 'Compilation arguments'
-        statusIconPosition:
-            title: 'Position of Build Icon on Bottom Bar'
-            description: 'Requires a reload/restart to update'
-            enum: ['Left', 'Right']
+        compilationSource:
             type: 'string'
-            default: 'Left'
+            default: ''
+            description: 'A file which contain a "global"'
+        compileOnSave:
+            type: 'boolean'
+            default: 'false'
+            description: 'Enable/Disable compilation on save'
 
     subscriptions: null
+    compilerProcess: null
+    compilerMessages: []
 
     activate: ->
-        @showPanel = true
-        @showBubble = true
-        @underlineIssues = true
+        @messages = new MessagePanelView
+            title: 'Anubis build panel. (F9 to compile an Anubis source file)'
+            position: 'bottom'
+            maxHeight: '300px'
+            rawTitle: true
 
-        @messages = new Set
-        @markers = []
-        @statusTiles = []
+        @messages.attach()
+        @messages.toggle()
 
-        @tabs = new Map
-        @tabs.set 'build', new BottomTab()
+        atom.workspace.onDidChangeActivePaneItem (editor) =>
+            if atom.config.get('language-anubis.compileOnSave')
+                pname = atom.config.get('language-anubis.projectName')
 
-        @tabs.get('build').initialize 'build', => @changeTab('build')
-        @tabs.get('build').visibility = true
+                if pname != "" && editor.getPath().indexOf(pname) != -1
+                    #@messages.open()
+                else
+                    #@messages.close()
 
-        @panel = document.createElement 'div'
-        @panel.id = 'language-anubis-panel'
+        atom.workspace.observeTextEditors (editor) ->
+            editor.onDidSave ->
+                if atom.config.get('language-anubis.compileOnSave')
+                    pname = atom.config.get('language-anubis.projectName')
 
-        @bottomStatus = new BottomStatus()
+                    if pname != "" && editor.getPath().indexOf(pname) != -1
+                        atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
 
-        @bottomStatus.initialize()
-        @bottomStatus.addEventListener 'click', ->
-            atom.commands.dispatch atom.views.getView(atom.workspace), 'language-anubis:next-error'
-        @panelWorkspace = atom.workspace.addBottomPanel item: @panel, visible: false
+        @disposable = atom.commands.add 'atom-text-editor', 'anubis:compile': (event) =>
+            @messages.clear()
 
-        @subscriptions = new CompositeDisposable
-        @subscriptions.add atom.commands.add 'atom-workspace',
-            'anubis:compile': (event) ->
+            if @compilerProcess
+                @compilerProcess.kill()
+                @compilerProcess = null
+
             options =
                 cwd: atom.project.getPaths()[0]
                 env: process.env
             command = (atom.config.get 'language-anubis.executablePath') + (atom.config.get 'language-anubis.executableName')
-            args = [atom.config.get 'language-anubis.compilationSource', "-nocolor"]
+            args = [atom.config.get('language-anubis.compilationSource'), "-nocolor"]
             args = args.concat (atom.config.get 'language-anubis.compilerArguments').split(" ")
 
-            stdout = (output) -> console.log(output)
-            stderr = (output) -> console.log(output)
+            parent = @
+
+            @messages.setTitle('<span style="font-weight: bold; color: white;">Compiling ' + args[0] + ' ...</span>', true)
+
+            stdout = (output) =>
+                @messages.add new PlainMessageView
+                    message: output
+                parent.compilerMessages.push(output)
+            stderr = (output) =>
+                @messages.add new PlainMessageView
+                    message: output
+                parent.compilerMessages.push(output)
             exit = (code) ->
-                notification_options =
-                    detail: "Could not compile the file '" + args[0] + "' because the Anubis compiler exited with #{code}."
-                atom.notifications.addError "The anubis compiler exited with #{code}.", notification_options
-            SpawnedProcess = new BufferedProcess({command, args, options, stdout, stderr})
-            SpawnedProcess.onWillThrowError (err) =>
+                parent.parseCompilerOutput()
+            @compilerProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
+            @compilerProcess.onWillThrowError (err) =>
                 return unless err?
                     if err.error.code is 'ENOENT'
                         notification_options =
                             detail: "Could not compile the file '" + args[0] + "' because the Anubis compiler was not found. (check your path/installation or specify the compiler location in the package settings)"
                         atom.notifications.addError "The anubis compiler was not found.", notification_options
+                        @messages.setTitle("Could not compile the file '" + args[0] + "' because the Anubis compiler was not found.")
 
     deactivate: ->
-        @subscriptions.dispose()
-        for statusTile in @statusTiles
-            statusTile.destroy()
+        @disposable.dispose()
 
-    consumeStatusBar: (statusBar) ->
-        @statusTiles.push statusBar.addLeftTile
-            item: @tabs.get('build'),
-            priority: -1004
-        statusIconPosition = atom.config.get('language-anubis.statusIconPosition')
-        @statusTiles.push statusBar["add#{statusIconPosition}Tile"]
-            item: @bottomStatus,
-            priority: -1003
+    parseCompilerOutput: ->
+        @messages.clear()
 
-    updateBubble: (point) ->
-        @removeBubble()
-        return unless @showBubble
-        return unless @messages.size
-        activeEditor = atom.workspace.getActiveTextEditor()
-        return unless activeEditor?.getPath()
-        point = point || activeEditor.getCursorBufferPosition()
-        try @messages.forEach (message) =>
-            return unless message.currentFile
-            return unless message.range?.containsPoint point
-            @bubble = activeEditor.markBufferRange([point, point], {invalidate: 'never'})
-            activeEditor.decorateMarker(
-                @bubble
-                {
-                    type: 'overlay',
-                    position: 'tail',
-                    item: @renderBubble(message)
-                }
-            )
-            throw null
+        @compilerMessages = @compilerMessages.join "\n"
 
-    setPanelVisibility: (Status) ->
-        if Status
-            @panelWorkspace.show() unless @panelWorkspace.isVisible()
+        compilerMessageRegex = /([a-zA-Z\/\\:_.]+) \(line (\d+), column (\d+)\) (\w+ (E|W)(\d+):([\s\S]+?)(?=[a-zA-Z\/\\:_.#]+ (?:\(line \d+, column \d+\)|module|# #|time)|$))/g
+
+        warnings = 0
+        errors = 0
+
+        while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
+            msg_type = messages_arr[5]
+            if msg_type == "W"
+                warnings += 1
+            else if msg_type == "E"
+                errors += 1
+
+            message = messages_arr[7]
+
+            message = message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+
+            @messages.add new LineMessageView
+                file: messages_arr[1]
+                line: messages_arr[2]
+                character: messages_arr[3]
+                preview: message
+
+        title = "<span style='font-weight: bold;'>Build</span>"
+
+        if warnings > 0 || errors > 0
+            title += ": &nbsp;&nbsp;"
+            @messages.toggle()
         else
-            @panelWorkspace.hide() if @panelWorkspace.isVisible()
+            buildTimeRegex = /^Build time: (.* seconds)$/gm
+            buildTimes = @compilerMessages.match buildTimeRegex
+            if buildTimes
+                title = "<span style='color: green; font-weight: bold;'>" + buildTimes[buildTimes.length - 1] + "."
+            else
+                title = "<span style='color: green; font-weight: bold;'>Build successful."
+            title += "<span>"
+            @compilerMessages = @compilerMessages.replace(/(?:\r\n|\r|\n)/g, '<br />')
+            @messages.add new PlainMessageView
+                message: @compilerMessages
+                raw: true
 
-    renderPanel: ->
-        @panel.innerHTML = ''
-        @removeMarkers()
-        @removeBubble()
-        if not @messages.size
-            return @setPanelVisibility(false)
-        @setPanelVisibility(true)
-        activeEditor = atom.workspace.getActiveTextEditor()
-        @messages.forEach (message) =>
-            if @scope is 'file' then return unless message.currentFile
-            if message.currentFile and message.range #Add the decorations to the current TextEditor
-                @markers.push marker = activeEditor.markBufferRange message.range, {invalidate: 'never'}
-                activeEditor.decorateMarker(
-                    marker, type: 'line-number', class: "language-anubis-highlight #{message.class}"
-                )
-            if @underlineIssues then activeEditor.decorateMarker(
-                marker, type: 'highlight', class: "language-anubis-highlight #{message.class}"
-            )
+        if errors > 0
+            title += "<span style='color: red; font-weight: bold;'>" + errors + "</span> <span font-weight: bold;'>error</span> "
 
-            if @scope is 'line'
-                return if @lineMessages.indexOf(message) is -1
+        if warnings > 0
+            title += "<span style='color: yellow; font-weight: bold;'>" + warnings + "</span> warning "
 
-            Element = Message.fromMessage(message, addPath: @scope is 'project', cloneNode: true)
-
-            @panel.appendChild Element
-        @updateBubble()
-
-    setShowPanel: (showPanel) ->
-        atom.config.set('language-anubis.showErrorPanel', showPanel)
-        @showPanel = showPanel
-        if showPanel
-            @panel.removeAttribute('hidden')
-        else
-            @panel.setAttribute('hidden', true)
-
-    removeBubble: ->
-        return unless @bubble
-        @bubble.destroy()
-        @bubble = null
-
-    removeMarkers: ->
-        return unless @markers.length
-        for marker in @markers
-            try marker.destroy()
-        @markers = []
-
-    changeTab: (Tab) ->
-        if @getActiveTabKey() is Tab
-            @showPanel = not @showPanel
-            @tabs.forEach (tab, key) -> tab.active = false
-        else
-            @showPanel = true
-            @scope = Tab
-            @tabs.forEach (tab, key) -> tab.active = Tab is key
-            @renderPanel()
-        @setShowPanel @showPanel
-
-    getActiveTabKey: ->
-        activeKey = null
-        @tabs.forEach (tab, key) -> activeKey = key if tab.active
-        return activeKey
-
-    getActiveTab: ->
-        @tabs.entries().find (tab) -> tab.active
+        @messages.setTitle(title, true)
