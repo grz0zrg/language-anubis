@@ -1,2 +1,3 @@
 'atom-text-editor':
-	'F9': 'anubis:compile'
+	'F8': 'anubis:compile'
+	'F9': 'anubis:compileProject'

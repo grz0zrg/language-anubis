@@ -5,8 +5,12 @@
       'label': 'Anubis'
       'submenu': [
         {
-          'label': 'Compile'
+          'label': 'Compile current file'
           'command': 'anubis:compile'
+        }
+        {
+          'label': 'Compile project'
+          'command': 'anubis:compileProject'
         }
       ]
     ]

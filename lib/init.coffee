@@ -19,8 +19,12 @@ module.exports =
             description: 'The project path you want to enable compilation for'
         compilerArguments:
             type: 'string'
-            default: ''
+            default: '-build_time'
             description: 'Compilation arguments'
+        projectCompilerArguments:
+            type: 'string'
+            default: '-build_time'
+            description: 'Compilation arguments for the project'
         compilationSource:
             type: 'string'
             default: ''
@@ -40,7 +44,7 @@ module.exports =
 
     activate: ->
         @messages = new MessagePanelView
-            title: 'Anubis build panel. (F9 to compile an Anubis source file)'
+            title: 'Anubis build panel. (F8 to compile an Anubis source file, F9 to compile an Anubis project)'
             position: 'bottom'
             maxHeight: atom.config.get('language-anubis.buildPanelMaxHeight') + "px"
             rawTitle: true
@@ -49,9 +53,9 @@ module.exports =
         @messages.toggle()
         @messages.hide()
 
-        pname = atom.config.get('language-anubis.projectName')
-        if atom.workspace.getActiveTextEditor()
-            if pname != "" && atom.workspace.getActiveTextEditor().getPath().indexOf(pname) != -1
+        active_text_editor = atom.workspace.getActiveTextEditor()
+        if active_text_editor
+            if path.extname(active_text_editor.getPath()) == '.anubis'
                 @messages.show()
             else
                 @messages.hide()
@@ -59,11 +63,9 @@ module.exports =
             @messages.hide()
 
         atom.workspace.onDidChangeActivePaneItem (editor) =>
-            pname = atom.config.get('language-anubis.projectName')
-
             if editor
                 if editor.getPath
-                    if pname != "" && editor.getPath().indexOf(pname) != -1
+                    if path.extname(editor.getPath()) == '.anubis'
                         @messages.show()
                     else
                         @messages.hide()
@@ -71,6 +73,7 @@ module.exports =
                     @messages.hide()
             else
                 @messages.hide()
+
         atom.workspace.observeTextEditors (editor) ->
             editor.onDidSave ->
                 if atom.config.get('language-anubis.compileOnSave')
@@ -78,45 +81,29 @@ module.exports =
 
                     if editor
                         if editor.getPath
-                            if pname != "" && editor.getPath().indexOf(pname) != -1
+                            if pname != ""
+                                if editor.getPath().indexOf(pname) != -1
+                                    atom.commands.dispatch(atom.views.getView(editor), 'anubis:compileProject')
+                            if path.extname(editor.getPath()) == '.anubis' && editor.getPath().indexOf(pname) == -1
                                 atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
 
-        @disposable = atom.commands.add 'atom-text-editor', 'anubis:compile': (event) =>
-            @messages.clear()
-
-            if @compilerProcess
-                @compilerProcess.kill()
-                @compilerProcess = null
-
-            options =
-                cwd: atom.project.getPaths()[0]
-                env: process.env
-            command = (atom.config.get 'language-anubis.executablePath') + (atom.config.get 'language-anubis.executableName')
+        @disposable = atom.commands.add 'atom-text-editor', 'anubis:compileProject': (event) =>
             args = [atom.config.get('language-anubis.compilationSource'), "-nocolor"]
+            args = args.concat (atom.config.get 'language-anubis.projectCompilerArguments').split(" ")
+            @compile(atom.project.getPaths()[0], args)
+
+        @disposable = atom.commands.add 'atom-text-editor', 'anubis:compile': (event) =>
+            active_text_editor = atom.workspace.getActiveTextEditor()
+            full_file_path = ""
+            if active_text_editor
+                full_file_path = active_text_editor.getPath()
+                if path.extname(full_file_path) != '.anubis'
+                    return
+            else
+                return
+            args = [full_file_path, "-nocolor"]
             args = args.concat (atom.config.get 'language-anubis.compilerArguments').split(" ")
-
-            @messages.setTitle('<span style="font-weight: bold; color: white;">Compiling ' + args[0] + ' ...</span>', true)
-
-            parent = @
-
-            stdout = (output) =>
-                @messages.add new PlainMessageView
-                    message: output
-                parent.compilerMessages.push(output)
-            stderr = (output) =>
-                @messages.add new PlainMessageView
-                    message: output
-                parent.compilerMessages.push(output)
-            exit = (code) ->
-                parent.parseCompilerOutput()
-            @compilerProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
-            @compilerProcess.onWillThrowError (err) =>
-                return unless err?
-                    if err.error.code is 'ENOENT'
-                        notification_options =
-                            detail: "Could not compile the file '" + args[0] + "' because the Anubis compiler was not found. (check your path/installation or specify the compiler location in the package settings)"
-                        atom.notifications.addError "The anubis compiler was not found.", notification_options
-                        @messages.setTitle("Could not compile the file '" + args[0] + "' because the Anubis compiler was not found.")
+            @compile(path.dirname(full_file_path), args)
 
     deactivate: ->
         @messages.close()
@@ -180,3 +167,36 @@ module.exports =
         @messages.setTitle(title, true)
 
         @compilerMessages = []
+
+    compile: (cwd, args) ->
+        @messages.clear()
+
+        if @compilerProcess
+            @compilerProcess.kill()
+            @compilerProcess = null
+
+        options =
+            cwd: cwd
+            env: process.env
+        command = (atom.config.get 'language-anubis.executablePath') + (atom.config.get 'language-anubis.executableName')
+
+        @messages.setTitle('<span style="font-weight: bold; color: white;">Compiling ' + args[0] + ' ...</span>', true)
+
+        stdout = (output) =>
+            @messages.add new PlainMessageView
+                message: output
+            @compilerMessages.push(output)
+        stderr = (output) =>
+            @messages.add new PlainMessageView
+                message: output
+            @compilerMessages.push(output)
+        exit = (code) =>
+            @parseCompilerOutput()
+        @compilerProcess = new BufferedProcess({command, args, options, stdout, stderr, exit})
+        @compilerProcess.onWillThrowError (err) =>
+            return unless err?
+                if err.error.code is 'ENOENT'
+                    notification_options =
+                        detail: "Could not compile the file '" + args[0] + "' because the Anubis compiler was not found. (check your path/installation or specify the compiler location in the package settings)"
+                    atom.notifications.addError "The anubis compiler was not found.", notification_options
+                    @messages.setTitle("Could not compile the file '" + args[0] + "' because the Anubis compiler was not found.")
