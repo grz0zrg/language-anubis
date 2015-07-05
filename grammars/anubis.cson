@@ -12,11 +12,11 @@
         'match': '//.*'
     }
     {
-        'begin': '^((?:public |global )?define(?:\\s+(?:macro|inline))?|public type|type)\\s+[.\n]*'
+        'begin': '^((?:public |global )?define(?:\\s+(?:macro|inline))?|public\\s+type|type)\\s+[.\n]*'
         'beginCaptures':
             '1':
                 'name': 'keyword.other.anubis'
-        'end': '[^.](\\. )(?!.*\])|[^.]\\.$|\\.\\.\\.'
+        'end': '[^.](\\. )(?!.*\])|[^.]?\\.$|\\.\\.\\.'
         'patterns': [
             {
                 'include': '#inParagraph'
@@ -40,7 +40,7 @@
                 'name': 'keyword.other.anubis'
         'patterns': [
             {
-                'match': '\\s+(.+anubis)'
+                'match': '\\s+(.+(?:anubis|a2a))'
                 'captures':
                     '1':
                         'name': 'string.filename.anubis'
