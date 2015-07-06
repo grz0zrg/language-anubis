@@ -40,19 +40,21 @@
                 'name': 'keyword.other.anubis'
         'patterns': [
             {
-                'match': '\\s+(.+(?:anubis|a2a))'
+                'match': '([*\\-0-9a-zA-Z/\\:_.]+(?:\\.anubis|\\.a2a))(.*$)'
                 'captures':
                     '1':
                         'name': 'string.filename.anubis'
+                    '2':
+                        'name': 'comment.block.anubis'
             }
             {
                 'name': 'comment.line.double-slash.anubis'
-                'match': '//.*'
+                'match_': '//.*'
             }
             {
                 'name': 'comment.block.anubis'
-                'begin': '/\\*'
-                'end': '\\*/'
+                'begin_': '/\\*'
+                'end_': '\\*/'
             }
         ]
     }
