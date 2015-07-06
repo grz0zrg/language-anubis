@@ -5,6 +5,7 @@ This is a package for the [Atom editor](https://atom.io) which add support for t
 
 ##Feature:
 - Syntax highlighting
-- Project build/compilation reports with on-save compile feature (use [atom-message-panel](https://github.com/tcarlsen/atom-message-panel), slightly modified)
+- Project build/compilation reports (use [atom-message-panel](https://github.com/tcarlsen/atom-message-panel), slightly modified)
+- Compile on save
 
 See also the [linter-anubis](https://github.com/grz0zrg/linter-anubis) plugin for on-the-fly syntax analysis of anubis files.

@@ -1,6 +1,6 @@
 'scopeName': 'source.anubis'
 'name': 'Anubis'
-'fileTypes': ['anubis']
+'fileTypes': ['anubis', 'a2a']
 'patterns': [
     {
         'name': 'comment.block.anubis'

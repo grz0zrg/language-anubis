@@ -33,14 +33,19 @@ module.exports =
             type: 'boolean'
             default: 'false'
             description: 'Enable/Disable compilation on save'
+        unfoldBuildPanelOnError:
+            type: 'boolean'
+            default: 'true'
+            description: 'Unfold build panel on error'
         buildPanelMaxHeight:
             type: 'number'
             default: '300'
             description: 'Max height of the build panel (px)'
 
-    subscriptions: null
     compilerProcess: null
     compilerMessages: []
+
+    disposable: null
 
     activate: ->
         @messages = new MessagePanelView
@@ -55,7 +60,7 @@ module.exports =
 
         active_text_editor = atom.workspace.getActiveTextEditor()
         if active_text_editor
-            if path.extname(active_text_editor.getPath()) == '.anubis'
+            if @validAnubisFile active_text_editor.getPath()
                 @messages.show()
             else
                 @messages.hide()
@@ -65,7 +70,7 @@ module.exports =
         atom.workspace.onDidChangeActivePaneItem (editor) =>
             if editor
                 if editor.getPath
-                    if path.extname(editor.getPath()) == '.anubis'
+                    if @validAnubisFile editor.getPath()
                         @messages.show()
                     else
                         @messages.hide()
@@ -74,7 +79,8 @@ module.exports =
             else
                 @messages.hide()
 
-        atom.workspace.observeTextEditors (editor) ->
+        atom.workspace.observeTextEditors (editor) =>
+            validAnubisFile = @validAnubisFile
             editor.onDidSave ->
                 if atom.config.get('language-anubis.compileOnSave')
                     pname = atom.config.get('language-anubis.projectName')
@@ -84,7 +90,7 @@ module.exports =
                             if pname != ""
                                 if editor.getPath().indexOf(pname) != -1
                                     atom.commands.dispatch(atom.views.getView(editor), 'anubis:compileProject')
-                            if path.extname(editor.getPath()) == '.anubis' && editor.getPath().indexOf(pname) == -1
+                            if validAnubisFile(editor.getPath()) && editor.getPath().indexOf(pname) == -1
                                 atom.commands.dispatch(atom.views.getView(editor), 'anubis:compile')
 
         @disposable = atom.commands.add 'atom-text-editor', 'anubis:compileProject': (event) =>
@@ -97,7 +103,7 @@ module.exports =
             full_file_path = ""
             if active_text_editor
                 full_file_path = active_text_editor.getPath()
-                if path.extname(full_file_path) != '.anubis'
+                if !@validAnubisFile(full_file_path)
                     return
             else
                 return
@@ -105,16 +111,27 @@ module.exports =
             args = args.concat (atom.config.get 'language-anubis.compilerArguments').split(" ")
             @compile(path.dirname(full_file_path), args)
 
+        console.log 'language-anubis activated' if atom.inDevMode()
+
     deactivate: ->
         @messages.close()
         @disposable.dispose()
+
+    validAnubisFile: (filepath) ->
+        ext = path.extname(filepath)
+        if ext == '.anubis' || ext == '.a2a'
+           return true
+        return false
+
+    toHtml: (str) ->
+        return str.replace(/(?:\r\n|\r|\n)/g, '<br />')
 
     parseCompilerOutput: ->
         @messages.clear()
 
         @compilerMessages = @compilerMessages.join "\n"
 
-        compilerMessageRegex = /([a-zA-Z\/\\:_.]+) \(line (\d+), column (\d+)\) (\w+ (E|W)(\d+):([\s\S]+?)(?=[a-zA-Z\/\\:_.#]+ (?:\(line \d+, column \d+\)|module|# #|time)|$))/g
+        compilerMessageRegex = /([\*\-0-9a-zA-Z\/\\:_.]+) \(line (\d+), column (\d+)\) (\w+ (E|W)(\d+):([\s\S]+?)(?=[a-zA-Z\/\\:_.#]+ (?:\(line \d+, column \d+\)|module|# #|time)|$))/g
 
         warnings = 0
         errors = 0
@@ -129,9 +146,7 @@ module.exports =
                 errors += 1
                 color = "red"
 
-            message = messages_arr[7]
-
-            message = message.replace(/(?:\r\n|\r|\n)/g, '<br />')
+            message = @toHtml messages_arr[7]
 
             @messages.add new LineMessageView
                 file: messages_arr[1]
@@ -144,7 +159,8 @@ module.exports =
 
         if warnings > 0 || errors > 0
             title += "&nbsp;"
-            @messages.toggle()
+            if atom.config.get 'language-anubis.unfoldBuildPanelOnError'
+                @messages.unfold()
 
         if errors > 0
             title += "<span style='color: red;'>" + errors + " <span font-weight: bold;'>Error</span> </span>"
@@ -156,7 +172,7 @@ module.exports =
             else
                 title = "<span style='color: green; font-weight: bold;'>Build successful."
             title += "</span>"
-            @compilerMessages = @compilerMessages.replace(/(?:\r\n|\r|\n)/g, '<br />')
+            @compilerMessages = @toHtml @compilerMessages
             @messages.add new PlainMessageView
                 message: @compilerMessages
                 raw: true
@@ -199,4 +215,4 @@ module.exports =
                     notification_options =
                         detail: "Could not compile the file '" + args[0] + "' because the Anubis compiler was not found. (check your path/installation or specify the compiler location in the package settings)"
                     atom.notifications.addError "The anubis compiler was not found.", notification_options
-                    @messages.setTitle("Could not compile the file '" + args[0] + "' because the Anubis compiler was not found.")
+                    @messages.setTitle(notification_options.detail)
