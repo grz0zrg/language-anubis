@@ -135,35 +135,42 @@ module.exports =
 
         warnings = 0
         errors = 0
+        internal_error = false
 
-        while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
-            msg_type = messages_arr[5]
-            color = ""
-            if msg_type == "W"
-                warnings += 1
-                color = "yellow"
-            else if msg_type == "E"
-                errors += 1
-                color = "red"
+        if @compilerMessages.match(/^Internal error in '.*' at line \d\./m) != null
+            internal_error = true
+        else
+            while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
+                msg_type = messages_arr[5]
+                color = ""
+                if msg_type == "W"
+                    warnings += 1
+                    color = "yellow"
+                else if msg_type == "E"
+                    errors += 1
+                    color = "red"
 
-            message = @toHtml messages_arr[7]
+                message = @toHtml messages_arr[7]
 
-            @messages.add new LineMessageView
-                file: messages_arr[1]
-                line: messages_arr[2]
-                character: messages_arr[3]
-                preview: message
-                color: color
+                @messages.add new LineMessageView
+                    file: messages_arr[1]
+                    line: messages_arr[2]
+                    character: messages_arr[3]
+                    preview: message
+                    color: color
 
         title = "<span style='font-weight: bold;'>Build failed.</span>"
 
-        if warnings > 0 || errors > 0
+        if warnings > 0 || errors > 0 || internal_error == true
             title += "&nbsp;"
             if atom.config.get 'language-anubis.unfoldBuildPanelOnError'
                 @messages.unfold()
 
         if errors > 0
             title += "<span style='color: red;'>" + errors + " <span font-weight: bold;'>Error</span> </span>"
+        else if internal_error == true
+            title += "<span style='color: red; font-weight: bold;'>An internal error occured.</span>"
+            @messages.unfold()
         else
             buildTimeRegex = /^Build time: (.* seconds)$/gm
             buildTimes = @compilerMessages.match buildTimeRegex
