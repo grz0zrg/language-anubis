@@ -137,7 +137,7 @@ module.exports =
         errors = 0
         internal_error = false
 
-        if @compilerMessages.match(/^Internal error in '.*' at line \d\./m) != null
+        if @compilerMessages.match(/^Internal error in '.*' at line \d+\./m) != null
             internal_error = true
         else
             while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
