@@ -137,7 +137,7 @@ module.exports =
         errors = 0
         internal_error = false
 
-        if @compilerMessages.match(/^Internal error in '.*' at line \d+\./m) != null
+        if @compilerMessages.match(/^Internal error in '.*' at line \d+\./m) != null || @compilerMessages.match(/^In '.*' at line \d+/m) != null
             internal_error = true
         else
             while((messages_arr = compilerMessageRegex.exec(@compilerMessages)) != null)
@@ -170,6 +170,10 @@ module.exports =
             title += "<span style='color: red;'>" + errors + " <span font-weight: bold;'>Error</span> </span>"
         else if internal_error == true
             title += "<span style='color: red; font-weight: bold;'>An internal error occured.</span>"
+            @compilerMessages = @toHtml @compilerMessages
+            @messages.add new PlainMessageView
+                message: @compilerMessages
+                raw: true
             @messages.unfold()
         else
             buildTimeRegex = /^Build time: (.* seconds)$/gm
