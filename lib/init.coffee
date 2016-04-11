@@ -131,7 +131,7 @@ module.exports =
 
         @compilerMessages = @compilerMessages.join "\n"
 
-        compilerMessageRegex = /([\*\-0-9a-zA-Z\/\\:_.]+) \(line (\d+), column (\d+)\) (\w+ (E|W)(\d+):([\s\S]+?)(?=[a-zA-Z\/\\:_.#]+ (?:\(line \d+, column \d+\)|module|# #|time)|$))/g
+        compilerMessageRegex = /([\*"'\-0-9a-zA-Z\/\\:_.]+) \(line (\d+), column (\d+)\) (\w+ (E|W)(\d+):([\s\S]+?)(?=[a-zA-Z\/\\:_.#]+ (?:\(line \d+, column \d+\)|module|# #|time)|$))/g
 
         warnings = 0
         errors = 0
